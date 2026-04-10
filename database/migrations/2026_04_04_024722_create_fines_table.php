@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('fines', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('loan_id')->constrained('loans')->cascadeOnDelete();
+            $table->decimal('amount', 8, 2);
+            $table->string('reason', 255);
+            $table->enum('status', ['pending', 'paid'])->default('pending');
+            $table->date('paid_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('fines');
+    }
+};

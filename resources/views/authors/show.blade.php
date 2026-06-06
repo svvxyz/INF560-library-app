@@ -20,6 +20,26 @@
         @if($author->biography)
             <p class="mt-4 text-slate-700 leading-relaxed">{{ $author->biography }}</p>
         @endif
+
+        {{-- Botones editar y eliminar --}}
+        <div class="mt-4 flex items-center gap-3">
+            <a href="{{ route('authors.edit', $author) }}"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600
+                       rounded-md hover:bg-indigo-700">
+                Editar
+            </a>
+
+            <form method="POST" action="{{ route('authors.destroy', $author) }}"
+                onsubmit="return confirm('¿Está seguro de eliminar este autor?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600
+                           rounded-md hover:bg-red-700">
+                    Eliminar
+                </button>
+            </form>
+        </div>
     </div>
  
     <h2 class="text-2xl font-bold text-slate-900 mb-4">

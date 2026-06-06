@@ -7,63 +7,77 @@ use Illuminate\Http\Request;
 
 class AuthorController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $authors = Author::withCount('books')->orderBy('last_name')->paginate(15);
+        $authors = Author::orderBy('last_name')->paginate(15);
 
         return view('authors.index', compact('authors'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Author $author)
     {
-        $author -> load('book.category');
+        $author->load('books');
 
-        return view('authors.show', compact('authors'));
+        return view('authors.show', compact('author'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function create()
     {
-        //
+        return view('authors.create');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'nationality' => 'nullable|string|max:80',
+            'birth_date' => 'nullable|date|before:today',
+            'biography' => 'nullable|string',
+        ]);
+
+        $author = Author::create($validated);
+
+        session()->flash('success', 'Autor registrado correctamente.');
+
+        return redirect()->route('authors.show', $author);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function edit(Author $author)
     {
-        //
+        return view('authors.edit', compact('author'));
+    }
+
+    public function update(Request $request, Author $author)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'nationality' => 'nullable|string|max:80',
+            'birth_date' => 'nullable|date|before:today',
+            'biography' => 'nullable|string',
+        ]);
+
+        $author->update($validated);
+
+        session()->flash('success', 'Autor actualizado correctamente.');
+
+        return redirect()->route('authors.show', $author);
+    }
+
+    public function destroy(Author $author)
+    {
+        if ($author->books()->count() > 0) {
+            return back()->with(
+                'error',
+                'No se puede eliminar un autor con libros asociados.'
+            );
+        }
+
+        $author->delete();
+
+        session()->flash('success', 'Autor eliminado correctamente.');
+
+        return redirect()->route('authors.index');
     }
 }

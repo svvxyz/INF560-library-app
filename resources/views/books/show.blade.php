@@ -1,15 +1,17 @@
+{{-- resources/views/books/show.blade.php --}}
 @extends('layouts.app')
- 
+
 @section('title', $book->title)
+
 @section('content')
     <a href="{{ route('books.index') }}"
        class="text-sm text-slate-600 hover:text-slate-900 mb-4 inline-block">
         ← Volver al catálogo
     </a>
- 
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
- 
-        {{-- ===== Columna izquierda: portada ===== --}}
+
+        {{-- ===== Portada ===== --}}
         <div class="lg:col-span-1">
             @if($book->cover_url)
                 <img src="{{ $book->cover_url }}" alt="{{ $book->title }}"
@@ -26,10 +28,10 @@
                 </div>
             @endif
         </div>
- 
-        {{-- ===== Columna derecha: información ===== --}}
+
+        {{-- ===== Información ===== --}}
         <div class="lg:col-span-2 space-y-4">
- 
+
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">{{ $book->title }}</h1>
                 <p class="text-slate-600 mt-1">
@@ -39,35 +41,36 @@
                     @endforeach
                 </p>
             </div>
- 
+
             <div class="flex gap-2 items-center">
                 <x-category-badge :category="$book->category" />
                 <x-book-status-badge :status="$book->status" />
             </div>
- 
+
             <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <dt class="text-slate-500">ISBN</dt>
                 <dd>{{ $book->isbn ?? '—' }}</dd>
- 
+
                 <dt class="text-slate-500">Editorial</dt>
                 <dd>{{ $book->publisher ?? '—' }}</dd>
- 
+
                 <dt class="text-slate-500">Año de publicación</dt>
                 <dd>{{ $book->publication_year ?? '—' }}</dd>
-<dt class="text-slate-500">Páginas</dt>
+
+                <dt class="text-slate-500">Páginas</dt>
                 <dd>{{ $book->pages ?? '—' }}</dd>
- 
+
                 <dt class="text-slate-500">Idioma</dt>
                 <dd>{{ $book->language ?? '—' }}</dd>
             </dl>
- 
+
             @if($book->description)
                 <div class="pt-2">
                     <h2 class="font-semibold text-slate-900 mb-1">Descripción</h2>
                     <p class="text-slate-700 leading-relaxed">{{ $book->description }}</p>
                 </div>
             @endif
- 
+
             {{-- ===== Disponibilidad ===== --}}
             <div class="bg-slate-100 rounded p-4">
                 <h2 class="font-semibold text-slate-900 mb-1">Disponibilidad</h2>
@@ -78,7 +81,7 @@
                     de {{ $book->total_copies }} copias disponibles
                 </p>
             </div>
- 
+
             {{-- ===== Préstamos activos ===== --}}
             @if($book->activeLoans->isNotEmpty())
                 <div class="pt-2">
@@ -109,7 +112,25 @@
                     </table>
                 </div>
             @endif
- 
+
+            {{-- ===== Editar / Eliminar ===== --}}
+            <div class="mt-6 flex items-center gap-3 pt-4 border-t border-slate-200">
+                <a href="{{ route('books.edit', $book) }}"
+                   class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                    Editar
+                </a>
+
+                <form method="POST" action="{{ route('books.destroy', $book) }}"
+                      onsubmit="return confirm('¿Está seguro de eliminar este libro?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+
         </div>
-</div>
+    </div>
 @endsection

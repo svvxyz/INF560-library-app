@@ -9,9 +9,6 @@ use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $books = Book::with(['category', 'authors'])->latest()->paginate(12);
@@ -19,9 +16,6 @@ class BookController extends Controller
         return view('books.index', compact('books'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $categories = Category::orderBy('name')->get();
@@ -30,17 +24,34 @@ class BookController extends Controller
         return view('books.create', compact('categories', 'authors'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'isbn' => 'required|string|size:13|unique:books,isbn',
+            'publisher' => 'nullable|string|max:200',
+            'publish_year' => 'nullable|integer|min:1000|max:' . date('Y'),
+            'pages' => 'nullable|integer|min:1',
+            'language' => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+            'cover_url' => 'nullable|url|max:500',
+            'total_copies' => 'required|integer|min:1',
+            'category_id' => 'required|exists:categories,id',
+            'authors' => 'required|array|min:1',
+            'authors.*' => 'integer|exists:authors,id',
+        ]);
+
+        $validated['available_copies'] = $validated['total_copies'];
+
+        $book = Book::create($validated);
+
+        $book->authors()->sync($request->input('authors', []));
+
+        session()->flash('success', 'Libro registrado exitosamente.');
+
+        return redirect()->route('books.show', $book);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Book $book)
     {
         $book -> load(['authors', 'category', 'activeLoans.member.user']);
@@ -48,27 +59,57 @@ class BookController extends Controller
         return view('books.show', compact('book'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Book $book)
     {
-        //
+        $categories = Category::orderBy('name')->get();
+        $authors = Author::orderBy('last_name')->get();
+
+        return view('books.edit', compact('book', 'categories', 'authors'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Book $book)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'publisher' => 'nullable|string|max:200',
+            'publish_year' => 'nullable|integer|min:1000|max:' . date('Y'),
+            'pages' => 'nullable|integer|min:1',
+            'language' => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+            'cover_url' => 'nullable|url|max:500',
+            'total_copies' => 'required|integer|min:1',
+            'category_id' => 'required|exists:categories,id',
+            'authors' => 'required|array|min:1',
+            'authors.*' => 'integer|exists:authors,id',
+        ]);
+
+        $loanedCopies = $book->total_copies - $book->available_copies;
+        $newTotal = $validated['total_copies'];
+
+        $validated['available_copies'] = max(0, $newTotal - $loanedCopies);
+
+        $book->update($validated);
+
+        $book->authors()->sync($request->input('authors', []));
+
+        session()->flash('success', 'Libro actualizado correctamente.');
+
+        return redirect()->route('books.show', $book);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Book $book)
     {
-        //
+        if ($book->activeLoans()->count() > 0) {
+            return back()->with(
+                'error',
+                'No se puede eliminar un libro con préstamos activos.'
+            );
+        }
+
+        $book->delete();
+
+        session()->flash('success', 'Libro eliminado correctamente.');
+
+        return redirect()->route('books.index');
     }
 }
